@@ -1,0 +1,24 @@
+# Environment & Local Configuration
+.env
+.env.local
+.env.*.local
+
+# Composer / Dependencies
+vendor/
+
+# Storage & Logs
+storage/logs/*
+storage/cache/*
+storage/framework/views/*
+*.log
+
+# OS & Editor generated files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

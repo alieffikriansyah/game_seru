@@ -1,0 +1,17 @@
+{
+  "appId": "com.coretan.app",
+  "appName": "Coretan",
+  "webDir": "upload",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "http://localhost/coretan/",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true,
+    "backgroundColor": "#1a1a2e"
+  },
+  "ios": {
+    "backgroundColor": "#1a1a2e"
+  }
+}

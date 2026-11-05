@@ -1,0 +1,60 @@
+{
+  "name": "Game Seru — Multiplayer UNO, Werewolf & Ular Tangga",
+  "short_name": "Game Seru 🎮",
+  "description": "Platform game multiplayer real-time: mainkan kartu UNO, intrik Werewolf, dan keseruan Ular Tangga bersama teman!",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0a0a14",
+  "theme_color": "#8b5cf6",
+  "orientation": "portrait",
+  "lang": "id",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "assets/gambargame.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icons/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icons/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Lobby Game",
+      "short_name": "Lobby",
+      "description": "Buka daftar room permainan aktif",
+      "url": "lobby",
+      "icons": [{ "src": "assets/gambargame.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Profil & Statistik",
+      "short_name": "Profil",
+      "description": "Lihat statistik kemenangan dan profil kamu",
+      "url": "auth/profil",
+      "icons": [{ "src": "assets/gambargame.png", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": []
+}

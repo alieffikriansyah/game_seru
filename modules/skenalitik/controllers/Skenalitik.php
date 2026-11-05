@@ -182,6 +182,30 @@ class Skenalitik extends Controller {
         }
     }
 
+    // ── Aksi: Pakai Kartu dari Tangan ─────────────────────────────
+    public function aksi_pakai_kartu() {
+        require_post('lobby');
+
+        try {
+            $room_code = strtoupper(trim($this->input->xss_clean($_POST['room_code'] ?? '')));
+            $card_id   = (int)($_POST['card_id'] ?? 0);
+            $user_id   = Session::get('user_id');
+
+            $room = $this->room_model->get_room_by_code($room_code);
+            if (!$room) json_response(['ok' => false, 'message' => 'Room tidak ditemukan.']);
+
+            $result = $this->skenalitik_model->use_hand_card($room->id, $user_id, $card_id);
+            if (!empty($result['ok'])) {
+                $result['state']   = $this->skenalitik_model->get_state($room->id, $user_id);
+                $result['version'] = $this->skenalitik_model->get_state_version($room->id);
+            }
+
+            json_response($result);
+        } catch (\Throwable $e) {
+            json_response(['ok' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
     // ── Aksi: Selesai Giliran ─────────────────────────────────────
     public function aksi_selesai_giliran() {
         require_post('lobby');

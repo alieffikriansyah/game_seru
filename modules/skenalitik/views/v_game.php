@@ -166,6 +166,30 @@
             transition: transform 0.1s;
         }
         .btn-rule-trigger:active { transform: scale(0.96); }
+        .btn-cards-trigger {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            color: #ffffff;
+            font-weight: 900;
+            font-size: 0.72rem;
+            border: 1.5px solid #c4b5fd;
+            padding: 5px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.35);
+            transition: transform 0.1s;
+        }
+        .btn-cards-trigger:active { transform: scale(0.96); }
+        .btn-cards-trigger.has-cards {
+            border-color: #fbbf24;
+            animation: cardsGlowPulse 1.8s infinite alternate;
+        }
+        @keyframes cardsGlowPulse {
+            0% { box-shadow: 0 0 6px rgba(196, 181, 253, 0.4); }
+            100% { box-shadow: 0 0 16px rgba(245, 158, 11, 0.9); }
+        }
         .btn-surrender-trigger {
             background: linear-gradient(135deg, #ef4444, #dc2626);
             color: #ffffff;
@@ -928,6 +952,19 @@
             height: 34px;
             box-shadow: 0 3px 0 #991b1b;
         }
+        .btn-gold-jail {
+            background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+            color: #ffffff;
+            font-size: 0.74rem;
+            height: 34px;
+            box-shadow: 0 3px 0 #b45309, 0 0 12px rgba(245, 158, 11, 0.6);
+            border-top: 1px solid #fde68a;
+            animation: pulse-gold 1.5s infinite alternate;
+        }
+        @keyframes pulse-gold {
+            0% { transform: scale(1); box-shadow: 0 3px 0 #b45309, 0 0 8px rgba(245, 158, 11, 0.5); }
+            100% { transform: scale(1.02); box-shadow: 0 3px 0 #b45309, 0 0 16px rgba(245, 158, 11, 0.9); }
+        }
 
         /* Property Purchase Offer Card in Center */
         .center-buy-card {
@@ -1537,6 +1574,136 @@
             color: #ffffff;
         }
 
+        /* ── CARD REVEAL & HAND CARDS POPUP MODAL ────────────────── */
+        .card-drawn-box {
+            width: min(90vw, 380px);
+            background: #0f172a;
+            border-radius: 18px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+            position: relative;
+            overflow: hidden;
+            border: 2px solid #38bdf8;
+            animation: cardPopupZoom 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .card-drawn-box.type-politik {
+            border-color: #f59e0b;
+            box-shadow: 0 0 35px rgba(245, 158, 11, 0.45);
+        }
+        .card-drawn-box.type-skena {
+            border-color: #06b6d4;
+            box-shadow: 0 0 35px rgba(6, 182, 212, 0.45);
+        }
+        @keyframes cardPopupZoom {
+            0% { transform: scale(0.7) rotate(-4deg); opacity: 0; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .card-reveal-badge {
+            display: inline-block;
+            font-size: 0.68rem;
+            font-weight: 900;
+            padding: 4px 12px;
+            border-radius: 20px;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+        .card-reveal-badge.type-politik {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+            border: 1px solid #f59e0b;
+        }
+        .card-reveal-badge.type-skena {
+            background: rgba(6, 182, 212, 0.2);
+            color: #38bdf8;
+            border: 1px solid #06b6d4;
+        }
+        .card-reveal-icon {
+            font-size: 3.5rem;
+            margin-bottom: 8px;
+            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+        }
+        .card-reveal-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 900;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+        .card-reveal-desc {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: #cbd5e1;
+            background: rgba(30, 41, 59, 0.7);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .badge-card-kept {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: #34d399;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid #10b981;
+            padding: 6px 10px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        .badge-card-instant {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.15);
+            border: 1px solid #0284c7;
+            padding: 6px 10px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        /* Hand Cards Modal */
+        .hand-card-item {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border: 1.5px solid #334155;
+            transition: all 0.2s ease;
+        }
+        .hand-card-item.type-politik {
+            border-color: #f59e0b;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), #1e293b);
+        }
+        .hand-card-item.type-skena {
+            border-color: #06b6d4;
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), #1e293b);
+        }
+        .hand-card-info {
+            text-align: left;
+            flex: 1;
+        }
+        .hand-card-name {
+            font-weight: 900;
+            font-size: 0.92rem;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+        .hand-card-desc {
+            font-size: 0.74rem;
+            color: #94a3b8;
+            line-height: 1.4;
+        }
+
         /* ── PORTRAIT ORIENTATION SHIELD (HP WAJIB LANDSCAPE) ────── */
         #portrait-shield {
             display: none;
@@ -1612,6 +1779,10 @@
         </div>
     </div>
     <div class="header-right">
+        <?php $card_count = count($state['my_cards'] ?? []); ?>
+        <button class="btn-cards-trigger <?= $card_count > 0 ? 'has-cards' : '' ?>" id="btn-hand-cards" onclick="openHandCardsModal()" title="Koleksi Kartu Sakti di Tangan">
+            🃏 Kartu Sakti (<span id="hand-card-count"><?= $card_count ?></span>)
+        </button>
         <button class="btn-rule-trigger" onclick="openRuleModal()">
             📖 Aturan Main
         </button>
@@ -1722,6 +1893,17 @@
                                     $me_in_jail = ($me && ($me['is_in_jail'] === true || (int)$me['is_in_jail'] === 1 || $me['is_in_jail'] === '1'));
                                 ?>
                                 <?php if ($me_in_jail): ?>
+                                    <?php
+                                        $has_hakim_card = false;
+                                        foreach (($state['my_cards'] ?? []) as $c) {
+                                            if ($c['deck_type'] === 'politik' && (int)$c['card_index'] === 8) $has_hakim_card = true;
+                                        }
+                                    ?>
+                                    <?php if ($has_hakim_card): ?>
+                                        <button class="btn-action-main btn-gold-jail" onclick="useJailCard()">
+                                            ⚖️ Bebas dengan Kartu Intervensi Hakim
+                                        </button>
+                                    <?php endif; ?>
                                     <button class="btn-action-main btn-danger-jail" onclick="payJailFine()">
                                         💸 Bayar Denda Karantina (150 PR)
                                     </button>
@@ -2187,6 +2369,42 @@
     </div>
 </div>
 
+<!-- 🃏 MODAL KARTU TERBUKA (CARD REVEAL POPUP) -->
+<div class="modal-overlay" id="modal-card-drawn" style="display:none;" onclick="if(event.target===this)closeCardDrawnModal()">
+    <div class="card-drawn-box type-politik" id="card-reveal-box">
+        <span class="card-reveal-badge type-politik" id="card-reveal-badge">🏛️ MANUVER POLITIK</span>
+        <div class="card-reveal-icon" id="card-reveal-icon">⚖️</div>
+        <div class="card-reveal-title" id="card-reveal-title">Intervensi Hakim</div>
+        <div class="card-reveal-desc" id="card-reveal-desc">Bebaskan diri Anda dari petak Karantina Klarifikasi tanpa syarat. Simpan kartu ini.</div>
+        <div id="card-reveal-footer">
+            <span class="badge-card-kept">📥 Disimpan di Saku Anda!</span>
+        </div>
+        <button type="button" class="btn-action-main btn-roll" style="width:100%; margin-top:8px; font-size:0.9rem;" onclick="closeCardDrawnModal()">
+            ⚡ Mengerti & Lanjutkan
+        </button>
+    </div>
+</div>
+
+<!-- 🎴 MODAL KOLEKSI KARTU DI TANGAN (MY HAND CARDS) -->
+<div class="modal-overlay" id="modal-my-cards" style="display:none;" onclick="if(event.target===this)closeHandCardsModal()">
+    <div class="modal-rule-box" style="width:min(92vw, 440px); padding:20px;">
+        <div class="modal-header">
+            <div style="font-size:1.15rem; font-weight:900; color:#0f172a; display:flex; align-items:center; gap:8px;">
+                <span>🃏</span> <span>Kartu Sakti di Tangan</span>
+            </div>
+            <button class="btn-modal-close" onclick="closeHandCardsModal()">✕</button>
+        </div>
+        <div id="hand-cards-list" style="max-height:60vh; overflow-y:auto; padding:8px 0;">
+            <!-- Rendered via JS -->
+        </div>
+        <div class="modal-footer" style="margin-top:12px; padding-top:12px; border-top:1px solid #e2e8f0;">
+            <button type="button" class="btn-action-main" style="width:100%; background:#64748b; color:#fff;" onclick="closeHandCardsModal()">
+                Tutup Saku Kartu
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
 const BASE_URL   = '<?= site_url() ?>';
 const ROOM_CODE  = '<?= $room_code ?>';
@@ -2196,6 +2414,7 @@ let isMyTurn         = <?= $is_my_turn ? 'true' : 'false' ?>;
 let tilesConfig       = <?= json_encode($state['tiles_config']) ?>;
 let currentProperties = <?= json_encode($state['properties']) ?>;
 let currentPlayers    = <?= json_encode($state['players']) ?>;
+let currentMyCards    = <?= json_encode($state['my_cards'] ?? []) ?>;
 let soundEnabled      = true;
 
 // Posisi bidak tiap pemain yang terlacak di memori client
@@ -2608,6 +2827,9 @@ async function rollDice() {
                 // Animasi melangkah bidak per petak secara berurutan!
                 animateWalk(USER_ID, data.new_pos, () => {
                     if (data.state) applyState(data.state, true);
+                    if (data.drawn_card) {
+                        showCardDrawnModal(data.drawn_card);
+                    }
                 });
             } else {
                 alert(data.message || 'Gagal melempar dadu');
@@ -2837,6 +3059,139 @@ async function payJailFine() {
     }
 }
 
+// ── Kartu Tangan & Card Reveal Actions ────────────────────────────
+function openHandCardsModal() {
+    renderHandCardsList();
+    document.getElementById('modal-my-cards').style.display = 'flex';
+}
+
+function closeHandCardsModal() {
+    document.getElementById('modal-my-cards').style.display = 'none';
+}
+
+function renderHandCardsList() {
+    const listEl = document.getElementById('hand-cards-list');
+    if (!listEl) return;
+
+    if (!currentMyCards || currentMyCards.length === 0) {
+        listEl.innerHTML = `
+            <div style="text-align:center; padding:24px 12px; color:#64748b; font-size:0.85rem; line-height:1.5;">
+                <div style="font-size:2.5rem; margin-bottom:8px;">📭</div>
+                <b>Saku Kartu Kosong</b><br>
+                Anda belum memiliki kartu yang disimpan di tangan.<br>
+                Mendaratlah di petak <b>Manuver Politik</b> untuk meraih kartu sakti seperti <i>Intervensi Hakim</i>!
+            </div>
+        `;
+        return;
+    }
+
+    listEl.innerHTML = currentMyCards.map(c => {
+        const isHakim = (c.deck_type === 'politik' && parseInt(c.card_index) === 8);
+        const isSaksi = (c.deck_type === 'politik' && parseInt(c.card_index) === 18);
+        const me = (currentPlayers || []).find(p => parseInt(p.user_id) === USER_ID);
+        const inJail = (me && (me.is_in_jail === true || me.is_in_jail === 1 || me.is_in_jail === '1'));
+
+        let btnAction = '';
+        if (isHakim) {
+            btnAction = inJail
+                ? `<button onclick="useJailCard()" style="background:linear-gradient(135deg, #f59e0b, #d97706);color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:0.75rem;font-weight:900;cursor:pointer;">⚖️ Bebas Sekarang</button>`
+                : `<span style="font-size:0.7rem;color:#10b981;font-weight:700;">Siap dipakai saat di Karantina</span>`;
+        } else if (isSaksi) {
+            btnAction = `<button onclick="playHandCard(${c.id})" style="background:linear-gradient(135deg, #8b5cf6, #6d28d9);color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:0.75rem;font-weight:900;cursor:pointer;">🛡️ Aktifkan (+200 PR)</button>`;
+        }
+
+        return `
+            <div class="hand-card-item type-${c.deck_type}">
+                <div class="hand-card-info">
+                    <div class="hand-card-name">
+                        <span>${c.icon || '🃏'}</span>
+                        <span>${c.title}</span>
+                    </div>
+                    <div class="hand-card-desc">${c.desc}</div>
+                </div>
+                ${btnAction ? `<div>${btnAction}</div>` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+function showCardDrawnModal(card) {
+    if (!card) return;
+    playSound(card.deck_type === 'politik' ? 'buy' : 'step');
+    const modal = document.getElementById('modal-card-drawn');
+    if (!modal) return;
+
+    const box = document.getElementById('card-reveal-box');
+    const badge = document.getElementById('card-reveal-badge');
+    const icon = document.getElementById('card-reveal-icon');
+    const title = document.getElementById('card-reveal-title');
+    const desc = document.getElementById('card-reveal-desc');
+    const footer = document.getElementById('card-reveal-footer');
+
+    if (box) box.className = `card-drawn-box type-${card.deck_type}`;
+    if (badge) {
+        badge.textContent = card.deck_type === 'politik' ? '🏛️ MANUVER POLITIK' : '⚡ GIMMICK SKENA';
+        badge.className = `card-reveal-badge type-${card.deck_type}`;
+    }
+    if (icon) icon.textContent = card.icon || (card.deck_type === 'politik' ? '🏛️' : '⚡');
+    if (title) title.textContent = card.title;
+    if (desc) desc.textContent = card.desc;
+    if (footer) {
+        if (card.is_kept) {
+            footer.innerHTML = `<span class="badge-card-kept">📥 Disimpan di Saku Anda! Buka menu Kartu Sakti untuk menggunakannya.</span>`;
+        } else {
+            footer.innerHTML = `<span class="badge-card-instant">⚡ Efek Kartu Langsung Diterapkan ke Papan Permainan!</span>`;
+        }
+    }
+    modal.style.display = 'flex';
+}
+
+function closeCardDrawnModal() {
+    const modal = document.getElementById('modal-card-drawn');
+    if (modal) modal.style.display = 'none';
+}
+
+async function useJailCard() {
+    playSound('start');
+    const formData = new FormData();
+    formData.append('room_code', ROOM_CODE);
+    formData.append('method', 'card');
+
+    const res = await fetch(BASE_URL + 'skenalitik/aksi_karantina', {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    const data = await res.json();
+    if (data.ok && data.state) {
+        applyState(data.state, false);
+        closeHandCardsModal();
+        alert(data.message || 'Bebas dari Karantina menggunakan kartu Intervensi Hakim!');
+    } else {
+        alert(data.message || 'Gagal menggunakan kartu');
+    }
+}
+
+async function playHandCard(cardId) {
+    const formData = new FormData();
+    formData.append('room_code', ROOM_CODE);
+    formData.append('card_id', cardId);
+
+    const res = await fetch(BASE_URL + 'skenalitik/aksi_pakai_kartu', {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    const data = await res.json();
+    if (data.ok && data.state) {
+        applyState(data.state, false);
+        closeHandCardsModal();
+        alert(data.message || 'Kartu berhasil diaktifkan!');
+    } else {
+        alert(data.message || 'Gagal mengaktifkan kartu');
+    }
+}
+
 // ── Realtime Polling Loop ─────────────────────────────────────────
 setInterval(async () => {
     try {
@@ -2889,6 +3244,18 @@ function applyState(state, keepPawnsAnimating = false) {
 
     // Update Pot Kas
     document.getElementById('pot-tax-info').innerHTML = `💰 Kas Denda VIP: <b>${parseInt(state.game.pot_tax || 0)} PR</b>`;
+
+    // Update Koleksi Kartu di Tangan
+    if (state.my_cards) {
+        currentMyCards = state.my_cards;
+        const cntEl = document.getElementById('hand-card-count');
+        if (cntEl) cntEl.textContent = state.my_cards.length;
+        const btnCards = document.getElementById('btn-hand-cards');
+        if (btnCards) {
+            if (state.my_cards.length > 0) btnCards.classList.add('has-cards');
+            else btnCards.classList.remove('has-cards');
+        }
+    }
 
     // Update Posisi Bidak Pemain jika tidak sedang dalam animasi melangkah
     if (!keepPawnsAnimating && !isWalking) {
@@ -3111,6 +3478,10 @@ function applyState(state, keepPawnsAnimating = false) {
                 let html = '';
                 const meInJail = (me && (me.is_in_jail === true || me.is_in_jail === 1 || me.is_in_jail === '1'));
                 if (meInJail) {
+                    const hasHakimCard = (currentMyCards || []).some(c => c.deck_type === 'politik' && parseInt(c.card_index) === 8);
+                    if (hasHakimCard) {
+                        html += `<button class="btn-action-main btn-gold-jail" onclick="useJailCard()">⚖️ Bebas dengan Kartu Intervensi Hakim</button>`;
+                    }
                     html += `<button class="btn-action-main btn-danger-jail" onclick="payJailFine()">💸 Bayar Denda Karantina (150 PR)</button>`;
                 }
                 html += `

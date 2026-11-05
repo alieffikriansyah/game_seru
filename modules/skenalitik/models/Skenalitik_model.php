@@ -310,16 +310,21 @@ class Skenalitik_model extends Model {
 
         $politik_defs = self::get_politik_cards();
         $skena_defs   = self::get_skena_cards();
-        foreach ($my_cards as &$mc) {
-            if ($mc['deck_type'] === 'politik') {
-                $mc['title'] = $politik_defs[$mc['card_index']]['title'] ?? 'Kartu Politik';
-                $mc['desc']  = $politik_defs[$mc['card_index']]['desc'] ?? '';
-            } else {
-                $mc['title'] = $skena_defs[$mc['card_index']]['title'] ?? 'Kartu Skena';
-                $mc['desc']  = $skena_defs[$mc['card_index']]['desc'] ?? '';
-            }
+        $formatted_my_cards = [];
+        foreach ($my_cards as $mc) {
+            $c_idx     = (int)$mc['card_index'];
+            $deck_type = $mc['deck_type'];
+            $def       = ($deck_type === 'politik') ? ($politik_defs[$c_idx] ?? []) : ($skena_defs[$c_idx] ?? []);
+            $formatted_my_cards[] = [
+                'id'         => (int)$mc['id'],
+                'card_index' => $c_idx,
+                'deck_type'  => $deck_type,
+                'title'      => $def['title'] ?? 'Kartu Rahasia',
+                'desc'       => $def['desc'] ?? '',
+                'icon'       => ($deck_type === 'politik' ? '🏛️' : '⚡'),
+                'can_use'    => ($deck_type === 'politik' && in_array($c_idx, [8, 18])),
+            ];
         }
-        unset($mc);
 
         // Logs Terakhir
         $logs = $this->db->query(
@@ -355,7 +360,7 @@ class Skenalitik_model extends Model {
             'is_my_turn'   => $is_my_turn,
             'players'      => $players,
             'properties'   => $props_by_tile,
-            'my_cards'     => $my_cards,
+            'my_cards'     => $formatted_my_cards,
             'logs'         => $logs,
             'tiles_config' => self::get_tiles_config(),
         ];
@@ -498,6 +503,9 @@ class Skenalitik_model extends Model {
             // Tarik Kartu Skena / Politik
             $card_res = $this->draw_and_apply_card($game_id, $user_id, $tile['group']);
             $action_desc = "Mengambil kartu {$card_res['title']}: {$card_res['desc']}";
+            if (!empty($card_res['teleport_pos'])) {
+                $new_pos = (int)$card_res['teleport_pos'];
+            }
         } elseif (in_array($tile['type'], ['property', 'transit', 'utility'])) {
             // Cek Kepemilikan Properti
             $prop = $this->db->query(
@@ -569,6 +577,7 @@ class Skenalitik_model extends Model {
             'pending_action' => $pending_action,
             'pending_tile_id'=> $pending_tile_id,
             'message'        => $action_desc,
+            'drawn_card'     => $card_res ?? null,
         ];
     }
 
@@ -662,34 +671,42 @@ class Skenalitik_model extends Model {
         }
 
         if (empty($card)) {
-            return ['title' => 'Kartu Kosong', 'desc' => 'Tidak ada efek.'];
+            return ['title' => 'Kartu Kosong', 'desc' => 'Tidak ada efek.', 'deck_type' => $deck_type, 'card_index' => 0, 'is_kept' => false];
         }
 
         $card = $card[0];
         $c_idx = (int)$card['card_index'];
         $defs = ($deck_type === 'politik') ? self::get_politik_cards() : self::get_skena_cards();
         $def = $defs[$c_idx] ?? ['title' => 'Kartu Rahasia', 'desc' => 'Efek misterius.'];
+        $def['deck_type'] = $deck_type;
+        $def['card_index'] = $c_idx;
+        $def['icon'] = ($deck_type === 'politik') ? '🏛️' : '⚡';
 
         $player = $this->db->query("SELECT * FROM sk_players WHERE sk_game_id = ? AND user_id = ?", [$game_id, $user_id])->result_array();
         $player = $player[0];
         $cur_pr = (int)$player['reputation_points'];
 
-        // Kartu yang disimpan di tangan
-        if (($deck_type === 'politik' && in_array($c_idx, [8, 18])) || ($deck_type === 'skena' && false)) {
+        // Kartu yang disimpan di tangan (Kartu Politik #8 Intervensi Hakim & #18 Pembungkaman Saksi)
+        if ($deck_type === 'politik' && in_array($c_idx, [8, 18])) {
             $this->db->query("UPDATE sk_cards SET status = 'hand', holder_user_id = ? WHERE id = ?", [$user_id, $card['id']]);
-            $this->add_log($game_id, $user_id, 'DRAW_CARD', "Mendapatkan kartu '{$def['title']}' dan menyimpannya di tangan!");
+            $this->add_log($game_id, $user_id, 'DRAW_CARD', "Mendapatkan kartu sakti '{$def['title']}' dan menyimpannya di tangan!");
+            $def['is_kept'] = true;
             return $def;
         }
 
-        // Eksekusi Efek Kartu Skena
+        $def['is_kept'] = false;
+
+        // Eksekusi Efek Kartu Skena (20 Kartu)
         if ($deck_type === 'skena') {
             switch ($c_idx) {
-                case 1: // Bajak Royalti: tarik 150 dari setiap pemain
+                case 1: // Bajak Royalti: tarik 150 dari setiap pemain di meja
                     $all = $this->db->query("SELECT * FROM sk_players WHERE sk_game_id = ? AND user_id != ? AND is_eliminated = 0", [$game_id, $user_id])->result_array();
+                    $total = 0;
                     foreach ($all as $other) {
                         $this->db->query("UPDATE sk_players SET reputation_points = reputation_points - 150 WHERE id = ?", [$other['id']]);
-                        $cur_pr += 150;
+                        $total += 150;
                     }
+                    $cur_pr += $total;
                     break;
                 case 2: // Kolektif Tipu-Tipu: +600 PR
                     $cur_pr += 600;
@@ -701,34 +718,40 @@ class Skenalitik_model extends Model {
                         $cur_pr += 100;
                     }
                     break;
-                case 4: // Podcast Aib: +450 PR
+                case 4: // Podcast Aib: +450 PR dari kas
                     $cur_pr += 450;
                     break;
                 case 5: // Drama Settingan: +100 dari tiap pemain
                     $all = $this->db->query("SELECT * FROM sk_players WHERE sk_game_id = ? AND user_id != ? AND is_eliminated = 0", [$game_id, $user_id])->result_array();
+                    $total = 0;
                     foreach ($all as $other) {
                         $this->db->query("UPDATE sk_players SET reputation_points = reputation_points - 100 WHERE id = ?", [$other['id']]);
-                        $cur_pr += 100;
+                        $total += 100;
                     }
+                    $cur_pr += $total;
                     break;
-                case 6: // Calo Tiket: +500 PR
+                case 6: // Calo Tiket: +500 PR dari kas
                     $cur_pr += 500;
                     break;
                 case 7: // Piringan Hitam: +150 dari semua pemain
                     $all = $this->db->query("SELECT * FROM sk_players WHERE sk_game_id = ? AND user_id != ? AND is_eliminated = 0", [$game_id, $user_id])->result_array();
+                    $total = 0;
                     foreach ($all as $other) {
                         $this->db->query("UPDATE sk_players SET reputation_points = reputation_points - 150 WHERE id = ?", [$other['id']]);
-                        $cur_pr += 150;
+                        $total += 150;
                     }
+                    $cur_pr += $total;
                     break;
                 case 8: // Sing-along Pop: -250 PR
                     $cur_pr -= 250;
                     break;
-                case 9: // Sneaker Cringe: -200 PR
+                case 9: // Sneaker Cringe: -200 PR ke kas
                     $cur_pr -= 200;
+                    $this->db->query("UPDATE sk_games SET pot_tax = pot_tax + 200 WHERE id = ?", [$game_id]);
                     break;
-                case 10: // Debat Seduh Kopi: -100 PR
+                case 10: // Debat Seduh Kopi: -100 PR ke kas
                     $cur_pr -= 100;
+                    $this->db->query("UPDATE sk_games SET pot_tax = pot_tax + 100 WHERE id = ?", [$game_id]);
                     break;
                 case 11: // Nepo Baby: -300 PR
                     $cur_pr -= 300;
@@ -736,8 +759,9 @@ class Skenalitik_model extends Model {
                 case 12: // Jual Prinsip: +600 PR
                     $cur_pr += 600;
                     break;
-                case 13: // Plagiasi: -350 PR
+                case 13: // Plagiasi: -350 PR ke kas
                     $cur_pr -= 350;
+                    $this->db->query("UPDATE sk_games SET pot_tax = pot_tax + 350 WHERE id = ?", [$game_id]);
                     break;
                 case 14: // Headliner Batal: -100 ke tiap pemain
                     $all = $this->db->query("SELECT * FROM sk_players WHERE sk_game_id = ? AND user_id != ? AND is_eliminated = 0", [$game_id, $user_id])->result_array();
@@ -746,47 +770,66 @@ class Skenalitik_model extends Model {
                         $cur_pr -= 100;
                     }
                     break;
-                case 15: // Kurator: +300 PR
+                case 15: // Kurator: +300 PR dari kas
                     $cur_pr += 300;
                     break;
-                case 16: // Kacamata Patah: -100 PR
+                case 16: // Kacamata Patah: -100 PR ke kas
                     $cur_pr -= 100;
+                    $this->db->query("UPDATE sk_games SET pot_tax = pot_tax + 100 WHERE id = ?", [$game_id]);
                     break;
-                case 17: // Duta Bir: +200 PR
-                    $cur_pr += 200;
+                case 17: // Duta Bir: Ambil 50 PR untuk tiap properti oranye/merah yang dimiliki
+                    $props = $this->db->query("SELECT COUNT(*) AS total FROM sk_properties WHERE sk_game_id = ? AND owner_user_id = ? AND tile_id IN (16, 18, 19, 21, 23, 24)", [$game_id, $user_id])->result_array();
+                    $beer_props = (int)($props[0]['total'] ?? 0);
+                    $bonus = max(50, $beer_props * 50);
+                    $cur_pr += $bonus;
                     break;
-                case 18: // Rombongan Liar: Maju langsung ke Bandara (Petak 35)
+                case 18: // Rombongan Liar: Maju langsung ke petak Bandara (Petak 35)
                     $this->db->query("UPDATE sk_players SET position = 35 WHERE id = ?", [$player['id']]);
+                    $def['teleport_pos'] = 35;
                     break;
-                case 19: // Klarifikasi PDF: -150 PR
+                case 19: // Klarifikasi PDF: -150 PR ke kas
                     $cur_pr -= 150;
+                    $this->db->query("UPDATE sk_games SET pot_tax = pot_tax + 150 WHERE id = ?", [$game_id]);
                     break;
-                case 20: // FOMO Line-up: -200 PR
+                case 20: // FOMO Line-up: -200 PR ke kas
                     $cur_pr -= 200;
+                    $this->db->query("UPDATE sk_games SET pot_tax = pot_tax + 200 WHERE id = ?", [$game_id]);
                     break;
             }
         } else {
-            // Eksekusi Efek Kartu Politik
+            // Eksekusi Efek Kartu Politik (20 Kartu)
             switch ($c_idx) {
-                case 1: // Gunting Lipatan: Rampas 300 PR dari pemain lain
-                    $richest = $this->db->query("SELECT * FROM sk_players WHERE sk_game_id = ? AND user_id != ? AND is_eliminated = 0 ORDER BY reputation_points DESC LIMIT 1", [$game_id, $user_id])->result_array();
-                    if (!empty($richest)) {
-                        $this->db->query("UPDATE sk_players SET reputation_points = reputation_points - 300 WHERE id = ?", [$richest[0]['id']]);
+                case 1: // Gunting Lipatan: Rampas 300 PR dari pemain di sebelah kanan Anda
+                    $turn_order = (int)$player['turn_order'];
+                    $right_player = $this->db->query(
+                        "SELECT * FROM sk_players WHERE sk_game_id = ? AND user_id != ? AND is_eliminated = 0 ORDER BY CASE WHEN turn_order < ? THEN turn_order ELSE turn_order - 100 END DESC LIMIT 1",
+                        [$game_id, $user_id, $turn_order]
+                    )->result_array();
+                    if (empty($right_player)) {
+                        $right_player = $this->db->query("SELECT * FROM sk_players WHERE sk_game_id = ? AND user_id != ? AND is_eliminated = 0 ORDER BY reputation_points DESC LIMIT 1", [$game_id, $user_id])->result_array();
+                    }
+                    if (!empty($right_player)) {
+                        $this->db->query("UPDATE sk_players SET reputation_points = reputation_points - 300 WHERE id = ?", [$right_player[0]['id']]);
                         $cur_pr += 300;
                     }
                     break;
-                case 2: // Kudeta Aset: Rebut 1 properti cokelat/biru muda lawan
-                    $target_prop = $this->db->query("SELECT * FROM sk_properties WHERE sk_game_id = ? AND tile_id IN (1,3,6,8,9) AND owner_user_id IS NOT NULL AND owner_user_id != ? LIMIT 1", [$game_id, $user_id])->result_array();
+                case 2: // Kudeta Aset: Rebut 1 properti cokelat/biru muda milik lawan dengan level/harga tertinggi
+                    $target_prop = $this->db->query(
+                        "SELECT * FROM sk_properties WHERE sk_game_id = ? AND tile_id IN (1, 3, 6, 8, 9) AND owner_user_id IS NOT NULL AND owner_user_id != ? ORDER BY building_level DESC, tile_id DESC LIMIT 1",
+                        [$game_id, $user_id]
+                    )->result_array();
                     if (!empty($target_prop)) {
                         $this->db->query("UPDATE sk_properties SET owner_user_id = ? WHERE id = ?", [$user_id, $target_prop[0]['id']]);
-                        $this->add_log($game_id, $user_id, 'KUDETA', "Kudeta Aset! Merebut kepemilikan petak nomor {$target_prop[0]['tile_id']}!");
+                        $this->add_log($game_id, $user_id, 'KUDETA', "Kudeta Aset! Merebut paksa petak nomor {$target_prop[0]['tile_id']}!");
                     }
                     break;
                 case 3: // OTT Rekayasa: Kirim 1 lawan ke Karantina
                     $target = $this->db->query("SELECT * FROM sk_players WHERE sk_game_id = ? AND user_id != ? AND is_eliminated = 0 ORDER BY reputation_points DESC LIMIT 1", [$game_id, $user_id])->result_array();
                     if (!empty($target)) {
                         $this->db->query("UPDATE sk_players SET position = 10, is_in_jail = 1, jail_turns = 0 WHERE id = ?", [$target[0]['id']]);
-                        $this->add_log($game_id, $user_id, 'OTT', "OTT Rekayasa! Mengirim {$target[0]['user_id']} langsung ke Karantina Klarifikasi!");
+                        $target_user_info = $this->db->query("SELECT username FROM users WHERE id = ?", [$target[0]['user_id']])->result_array();
+                        $t_name = $target_user_info[0]['username'] ?? 'Lawan';
+                        $this->add_log($game_id, $user_id, 'OTT', "OTT Rekayasa! Mengirim {$t_name} langsung ke Karantina Klarifikasi!");
                     }
                     break;
                 case 4: // Ijazah Palsu: Target rugi 350 masuk ke saldo pemain
@@ -796,8 +839,19 @@ class Skenalitik_model extends Model {
                         $cur_pr += 350;
                     }
                     break;
+                case 5: // Cabut Izin Keramaian: Dilarang menarik sewa 2 putaran
+                    $opp_prop = $this->db->query(
+                        "SELECT * FROM sk_properties WHERE sk_game_id = ? AND owner_user_id IS NOT NULL AND owner_user_id != ? ORDER BY building_level DESC, tile_id DESC LIMIT 1",
+                        [$game_id, $user_id]
+                    )->result_array();
+                    if (!empty($opp_prop)) {
+                        $this->db->query("UPDATE sk_properties SET rent_blocked_turns = 2 WHERE id = ?", [$opp_prop[0]['id']]);
+                        $this->add_log($game_id, $user_id, 'BLOCKED_RENT', "Cabut Izin Keramaian! Petak #{$opp_prop[0]['tile_id']} dilarang menarik uang sewa selama 2 putaran.");
+                    }
+                    break;
                 case 6: // Buzzer: Bayar 150 potong 500 pemain terkaya
                     $cur_pr -= 150;
+                    $this->db->query("UPDATE sk_games SET pot_tax = pot_tax + 150 WHERE id = ?", [$game_id]);
                     $richest = $this->db->query("SELECT * FROM sk_players WHERE sk_game_id = ? AND user_id != ? AND is_eliminated = 0 ORDER BY reputation_points DESC LIMIT 1", [$game_id, $user_id])->result_array();
                     if (!empty($richest)) {
                         $this->db->query("UPDATE sk_players SET reputation_points = reputation_points - 500 WHERE id = ?", [$richest[0]['id']]);
@@ -806,18 +860,30 @@ class Skenalitik_model extends Model {
                 case 7: // Bansos Dobel: +400 PR
                     $cur_pr += 400;
                     break;
-                case 9: // Kriminalisasi Rival: +200 PR
-                    $cur_pr += 200;
+                case 9: // Kriminalisasi Rival: Target bayar 200 PR atau masuk Karantina
+                    $target = $this->db->query("SELECT * FROM sk_players WHERE sk_game_id = ? AND user_id != ? AND is_eliminated = 0 ORDER BY reputation_points DESC LIMIT 1", [$game_id, $user_id])->result_array();
+                    if (!empty($target)) {
+                        if ((int)$target[0]['reputation_points'] >= 200) {
+                            $this->db->query("UPDATE sk_players SET reputation_points = reputation_points - 200 WHERE id = ?", [$target[0]['id']]);
+                            $cur_pr += 200;
+                            $this->add_log($game_id, $user_id, 'KRIMINALISASI', "Kriminalisasi Rival: Target membayar upeti 200 PR kepada Anda.");
+                        } else {
+                            $this->db->query("UPDATE sk_players SET position = 10, is_in_jail = 1, jail_turns = 0 WHERE id = ?", [$target[0]['id']]);
+                            $this->add_log($game_id, $user_id, 'KRIMINALISASI', "Kriminalisasi Rival: Target tidak mampu membayar 200 PR dan langsung dijebloskan ke Karantina!");
+                        }
+                    }
                     break;
                 case 10: // Lobi Senayan: Buff multiplier sewa properti
                     $this->db->query("UPDATE sk_properties SET rent_multiplier_buff = 2.0 WHERE sk_game_id = ? AND owner_user_id = ?", [$game_id, $user_id]);
                     break;
                 case 11: // Pajak Ekosistem: Tarik 100 dari tiap pemain yang punya properti
                     $all_owners = $this->db->query("SELECT DISTINCT owner_user_id FROM sk_properties WHERE sk_game_id = ? AND owner_user_id IS NOT NULL AND owner_user_id != ?", [$game_id, $user_id])->result_array();
+                    $total = 0;
                     foreach ($all_owners as $ow) {
                         $this->db->query("UPDATE sk_players SET reputation_points = reputation_points - 100 WHERE sk_game_id = ? AND user_id = ?", [$game_id, $ow['owner_user_id']]);
-                        $cur_pr += 100;
+                        $total += 100;
                     }
+                    $cur_pr += $total;
                     break;
                 case 12: // Isu SARA: Seluruh lawan mundur 2 langkah
                     $opponents = $this->db->query("SELECT * FROM sk_players WHERE sk_game_id = ? AND user_id != ? AND is_eliminated = 0", [$game_id, $user_id])->result_array();
@@ -832,13 +898,40 @@ class Skenalitik_model extends Model {
                     $add = ($c_idx === 16) ? 500 : (($c_idx === 17) ? 350 : 300);
                     $cur_pr += $add;
                     break;
+                case 14: // Audit Fiktif: Paksa 1 pemain membayar 50 PR per unit bangunan
+                    $target = $this->db->query("SELECT * FROM sk_players WHERE sk_game_id = ? AND user_id != ? AND is_eliminated = 0 ORDER BY reputation_points DESC LIMIT 1", [$game_id, $user_id])->result_array();
+                    if (!empty($target)) {
+                        $bld_count = $this->db->query("SELECT SUM(building_level) as total FROM sk_properties WHERE sk_game_id = ? AND owner_user_id = ?", [$game_id, $target[0]['user_id']])->result_array();
+                        $units = max(1, (int)($bld_count[0]['total'] ?? 1));
+                        $fee = $units * 50;
+                        $this->db->query("UPDATE sk_players SET reputation_points = reputation_points - ? WHERE id = ?", [$fee, $target[0]['id']]);
+                        $cur_pr += $fee;
+                        $this->add_log($game_id, $user_id, 'AUDIT_FIKTIF', "Audit Fiktif! Memaksa target membayar denda {$fee} PR untuk {$units} unit bangunan.");
+                    }
+                    break;
+                case 15: // Serangan Siber DDoS: Lumpuhkan utilitas lawan (petak 12 & 28)
+                    $this->db->query("UPDATE sk_properties SET rent_blocked_turns = 2 WHERE sk_game_id = ? AND tile_id IN (12, 28) AND owner_user_id IS NOT NULL AND owner_user_id != ?", [$game_id, $user_id]);
+                    $this->add_log($game_id, $user_id, 'DDOS', "Serangan Siber DDoS! Seluruh utilitas lawan dilumpuhkan dari menarik sewa selama 2 putaran.");
+                    break;
                 case 19: // Tukar Kasus: Jika di penjara, pindah ke lawan termiskin
                     if ($player['is_in_jail']) {
                         $lowest = $this->db->query("SELECT * FROM sk_players WHERE sk_game_id = ? AND user_id != ? AND is_eliminated = 0 ORDER BY reputation_points ASC LIMIT 1", [$game_id, $user_id])->result_array();
                         if (!empty($lowest)) {
-                            $this->db->query("UPDATE sk_players SET is_in_jail = 0 WHERE id = ?", [$player['id']]);
-                            $this->db->query("UPDATE sk_players SET is_in_jail = 1, position = 10 WHERE id = ?", [$lowest[0]['id']]);
+                            $this->db->query("UPDATE sk_players SET is_in_jail = 0, jail_turns = 0 WHERE id = ?", [$player['id']]);
+                            $this->db->query("UPDATE sk_players SET is_in_jail = 1, jail_turns = 0, position = 10 WHERE id = ?", [$lowest[0]['id']]);
+                            $this->add_log($game_id, $user_id, 'TUKAR_KASUS', "Tukar Kasus! Status Karantina berhasil dialihkan ke lawan.");
                         }
+                    } else {
+                        $cur_pr += 200;
+                    }
+                    break;
+                case 20: // Blackmail Politik: Intip kartu tangan lawan & buang 1
+                    $opp_card = $this->db->query("SELECT * FROM sk_cards WHERE sk_game_id = ? AND holder_user_id != ? AND status = 'hand' LIMIT 1", [$game_id, $user_id])->result_array();
+                    if (!empty($opp_card)) {
+                        $this->db->query("UPDATE sk_cards SET status = 'discard', holder_user_id = NULL WHERE id = ?", [$opp_card[0]['id']]);
+                        $this->add_log($game_id, $user_id, 'BLACKMAIL', "Blackmail Politik! Berhasil membocorkan dan membuang 1 kartu tangan lawan ke discard.");
+                    } else {
+                        $cur_pr += 200;
                     }
                     break;
             }
@@ -1021,6 +1114,39 @@ class Skenalitik_model extends Model {
         return ['ok' => true, 'message' => 'Bebas dari Karantina! Anda kini bisa melangkah.'];
     }
 
+    // ── Aksi: Mainkan Kartu dari Tangan ───────────────────────────
+    public function use_hand_card($room_id, $user_id, $card_id) {
+        $game = $this->db->query("SELECT * FROM sk_games WHERE room_id = ?", [$room_id])->result_array();
+        if (empty($game)) return ['ok' => false, 'message' => 'Game tidak ditemukan.'];
+        $game = $game[0];
+        $game_id = (int)$game['id'];
+
+        $card = $this->db->query(
+            "SELECT * FROM sk_cards WHERE id = ? AND sk_game_id = ? AND holder_user_id = ? AND status = 'hand'",
+            [$card_id, $game_id, $user_id]
+        )->result_array();
+        if (empty($card)) {
+            return ['ok' => false, 'message' => 'Kartu tidak ditemukan di tangan Anda.'];
+        }
+        $card = $card[0];
+        $c_idx = (int)$card['card_index'];
+        $deck_type = $card['deck_type'];
+
+        if ($deck_type === 'politik' && $c_idx === 8) {
+            // Intervensi Hakim: Bebaskan diri dari Karantina
+            return $this->exit_jail($room_id, $user_id, 'card');
+        } elseif ($deck_type === 'politik' && $c_idx === 18) {
+            // Pembungkaman Saksi: Tebus perlindungan & amankan 200 PR
+            $this->db->query("UPDATE sk_cards SET status = 'discard', holder_user_id = NULL WHERE id = ?", [$card['id']]);
+            $this->db->query("UPDATE sk_players SET reputation_points = reputation_points + 200 WHERE sk_game_id = ? AND user_id = ?", [$game_id, $user_id]);
+            $this->add_log($game_id, $user_id, 'SAKSI_SILENT', "Memainkan kartu 'Pembungkaman Saksi'! Membungkam saksi dan mengamankan +200 PR.");
+            $this->bump_version($game_id, $room_id);
+            return ['ok' => true, 'message' => 'Kartu Pembungkaman Saksi berhasil diaktifkan (+200 PR)!'];
+        }
+
+        return ['ok' => false, 'message' => 'Kartu ini tidak dapat dimainkan secara langsung.'];
+    }
+
     // ── Aksi: Selesai Giliran & Evaluasi Eliminasi / Menang ───────
     public function end_turn($room_id, $user_id) {
         $game = $this->db->query("SELECT * FROM sk_games WHERE room_id = ?", [$room_id])->result_array();
@@ -1035,8 +1161,9 @@ class Skenalitik_model extends Model {
         $player = $this->db->query("SELECT * FROM sk_players WHERE sk_game_id = ? AND user_id = ?", [$game_id, $user_id])->result_array();
         $player = $player[0];
 
-        // Reset buff sewa sementara
+        // Reset buff sewa sementara & kurangi putaran blokir sewa properti
         $this->db->query("UPDATE sk_properties SET rent_multiplier_buff = 1.0 WHERE sk_game_id = ? AND owner_user_id = ?", [$game_id, $user_id]);
+        $this->db->query("UPDATE sk_properties SET rent_blocked_turns = GREATEST(0, rent_blocked_turns - 1) WHERE sk_game_id = ? AND owner_user_id = ? AND rent_blocked_turns > 0", [$game_id, $user_id]);
 
         // CEK MEKANIK UTANG & ELIMINASI: Batas maksimal utang adalah -300 PR.
         // Jika akhir giliran saldo <= -301 PR -> ELIMINASI TOTAL (DEPLATFORMED)

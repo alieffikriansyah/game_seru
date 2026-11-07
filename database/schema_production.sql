@@ -42,7 +42,7 @@ CREATE TABLE `game_rooms` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `room_code` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL,
   `room_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `game_type` enum('uno','werewolf','ular_tangga','skenalitik') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `game_type` enum('uno','werewolf','ular_tangga','skenalitik','ludo') COLLATE utf8mb4_unicode_ci NOT NULL,
   `host_user_id` int(11) NOT NULL,
   `status` enum('waiting','playing','finished') COLLATE utf8mb4_unicode_ci DEFAULT 'waiting',
   `max_players` tinyint(4) DEFAULT '10',
@@ -299,6 +299,69 @@ CREATE TABLE `ww_chats` (
   PRIMARY KEY (`id`),
   KEY `idx_ww_chats_game` (`ww_game_id`,`created_at`),
   CONSTRAINT `ww_chats_ibfk_1` FOREIGN KEY (`ww_game_id`) REFERENCES `ww_games` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- 7. GAME LUDO (MULTIPLAYER CLASSIC)
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS `ludo_tokens`;
+DROP TABLE IF EXISTS `ludo_players`;
+DROP TABLE IF EXISTS `ludo_logs`;
+DROP TABLE IF EXISTS `ludo_games`;
+
+CREATE TABLE `ludo_games` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `room_id` int(11) NOT NULL,
+  `current_turn_user_id` int(11) NOT NULL,
+  `winner_user_id` int(11) DEFAULT NULL,
+  `dice_value` tinyint(4) DEFAULT NULL,
+  `consecutive_sixes` tinyint(4) NOT NULL DEFAULT '0',
+  `game_phase` enum('roll','select_token','ended') NOT NULL DEFAULT 'roll',
+  `last_action` varchar(50) DEFAULT NULL,
+  `last_action_desc` text DEFAULT NULL,
+  `state_version` int(11) NOT NULL DEFAULT '1',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_ludo_room` (`room_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `ludo_players` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `ludo_game_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `color` enum('red','green','yellow','blue') NOT NULL,
+  `turn_order` tinyint(4) NOT NULL DEFAULT '1',
+  `finished_rank` tinyint(4) NOT NULL DEFAULT '0',
+  `tokens_finished` tinyint(4) NOT NULL DEFAULT '0',
+  `is_resigned` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_lp_game` (`ludo_game_id`),
+  KEY `idx_lp_user` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `ludo_tokens` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `ludo_game_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `color` enum('red','green','yellow','blue') NOT NULL,
+  `token_index` tinyint(4) NOT NULL,
+  `state` enum('yard','track','home_run','finished') NOT NULL DEFAULT 'yard',
+  `position` int(11) NOT NULL DEFAULT '-1',
+  `steps_moved` tinyint(4) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_lt_game_user` (`ludo_game_id`,`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `ludo_logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `ludo_game_id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `action_type` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `message` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_ludo_logs` (`ludo_game_id`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

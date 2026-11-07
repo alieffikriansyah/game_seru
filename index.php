@@ -1,4 +1,5 @@
 <?php
+ob_start();
 
 // Define Application Paths
 define('FCPATH', dirname(__FILE__) . DIRECTORY_SEPARATOR);

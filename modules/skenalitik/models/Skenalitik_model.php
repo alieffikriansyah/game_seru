@@ -4,6 +4,29 @@ class Skenalitik_model extends Model {
 
     public function __construct() {
         parent::__construct();
+        $this->ensure_schema();
+    }
+
+    private function ensure_schema() {
+        static $checked = false;
+        if ($checked) return;
+        $checked = true;
+
+        try {
+            $this->db->query("ALTER TABLE sk_properties ADD COLUMN rent_blocked_turns tinyint(4) DEFAULT '0'");
+        } catch (\Throwable $e) {}
+
+        try {
+            $this->db->query("ALTER TABLE sk_properties ADD COLUMN rent_multiplier_buff decimal(3,1) DEFAULT '1.0'");
+        } catch (\Throwable $e) {}
+
+        try {
+            $this->db->query("ALTER TABLE sk_cards ADD COLUMN holder_user_id int(11) DEFAULT NULL");
+        } catch (\Throwable $e) {}
+
+        try {
+            $this->db->query("ALTER TABLE sk_games ADD COLUMN state_version int(11) DEFAULT '1'");
+        } catch (\Throwable $e) {}
     }
 
     // ── Master Data 40 Petak Papan Skenalitik ─────────────────────

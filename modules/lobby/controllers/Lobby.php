@@ -27,6 +27,7 @@ class Lobby extends Controller {
         $data['ww_min']        = $config['ww_min_players'];
         $data['ut_min']        = $config['ut_min_players'];
         $data['sk_min']        = $config['sk_min_players'];
+        $data['ludo_min']      = $config['ludo_min_players'];
 
         $this->load->view('lobby/v_lobby', $data);
     }
@@ -49,7 +50,7 @@ class Lobby extends Controller {
             redirect('lobby');
             return;
         }
-        if (!in_array($game_type, ['uno', 'werewolf', 'ular_tangga', 'skenalitik'])) {
+        if (!in_array($game_type, ['uno', 'werewolf', 'ular_tangga', 'skenalitik', 'ludo'])) {
             Session::set_flashdata('error', 'Pilih jenis game yang valid.');
             redirect('lobby');
             return;
@@ -154,6 +155,9 @@ class Lobby extends Controller {
         } elseif ($room['game_type'] === 'skenalitik') {
             $data['min_players'] = $config['sk_min_players'];
             $data['max_players'] = $config['sk_max_players'];
+        } elseif ($room['game_type'] === 'ludo') {
+            $data['min_players'] = $config['ludo_min_players'];
+            $data['max_players'] = $config['ludo_max_players'];
         } else {
             $data['min_players'] = $config['ww_min_players'];
             $data['max_players'] = $config['ww_max_players'];
@@ -206,6 +210,8 @@ class Lobby extends Controller {
             $min = $config['ut_min_players'];
         } elseif ($room->game_type === 'skenalitik') {
             $min = $config['sk_min_players'];
+        } elseif ($room->game_type === 'ludo') {
+            $min = $config['ludo_min_players'];
         } else {
             $min = $config['ww_min_players'];
         }
@@ -233,6 +239,9 @@ class Lobby extends Controller {
         } elseif ($room->game_type === 'skenalitik') {
             $this->load->model('skenalitik/skenalitik_model');
             $this->skenalitik_model->init_game($room->id, $players);
+        } elseif ($room->game_type === 'ludo') {
+            $this->load->model('ludo/ludo_model');
+            $this->ludo_model->init_game($room->id, $players);
         } else {
             $this->load->model('werewolf/werewolf_model');
             $this->werewolf_model->init_game($room->id, $players);

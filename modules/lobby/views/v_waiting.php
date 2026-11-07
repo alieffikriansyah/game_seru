@@ -65,6 +65,7 @@
         .game-type-pill.uno { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
         .game-type-pill.ular_tangga { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7; }
         .game-type-pill.skenalitik { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #fbbf24; }
+        .game-type-pill.ludo { background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); color: #60a5fa; }
         .game-type-pill.werewolf { background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3); color: #c4b5fd; }
 
         /* Player Grid */
@@ -132,6 +133,7 @@
     <span class="game-type-pill <?= $room['game_type'] ?>">
         <?php
             if ($room['game_type'] === 'uno') echo '🃏 UNO';
+            elseif ($room['game_type'] === 'ludo') echo '🎯 Ludo';
             elseif ($room['game_type'] === 'ular_tangga') echo '🎲 Ular Tangga';
             elseif ($room['game_type'] === 'skenalitik') echo '🎙️ Skenalitik';
             else echo '🐺 Werewolf';

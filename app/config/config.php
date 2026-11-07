@@ -39,4 +39,6 @@ $config['ut_min_players']   = 2;
 $config['ut_max_players']   = 6;
 $config['sk_min_players']   = 2;
 $config['sk_max_players']   = 6;
+$config['ludo_min_players'] = 2;
+$config['ludo_max_players'] = 4;
 

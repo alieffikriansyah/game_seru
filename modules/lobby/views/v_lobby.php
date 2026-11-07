@@ -71,9 +71,11 @@
         .room-card.uno::before { background: var(--color-uno-red); }
         .room-card.ular_tangga::before { background: #10b981; }
         .room-card.skenalitik::before { background: #f59e0b; }
+        .room-card.ludo::before { background: #3b82f6; }
         .room-card.werewolf::before { background: var(--accent-primary); }
         .badge-ular_tangga { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
         .badge-skenalitik { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+        .badge-ludo { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
         .room-card:active { transform: scale(0.99); }
         .room-card-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.625rem; }
         .room-game-icon { font-size: 1.75rem; }
@@ -181,6 +183,7 @@
 <!-- Filter Tabs -->
 <div class="filter-tabs">
     <button class="filter-tab active" onclick="filterRooms('all', this)">Semua</button>
+    <button class="filter-tab" onclick="filterRooms('ludo', this)">🎯 Ludo</button>
     <button class="filter-tab" onclick="filterRooms('skenalitik', this)">🎙️ Skenalitik</button>
     <button class="filter-tab" onclick="filterRooms('uno', this)">🃏 UNO</button>
     <button class="filter-tab" onclick="filterRooms('ular_tangga', this)">🎲 Ular Tangga</button>
@@ -207,9 +210,9 @@
     <div id="room-list">
         <?php foreach ($rooms as $room): ?>
         <?php
-            $icon = ($room['game_type'] === 'uno') ? '🃏' : (($room['game_type'] === 'ular_tangga') ? '🎲' : (($room['game_type'] === 'skenalitik') ? '🎙️' : '🐺'));
+            $icon = ($room['game_type'] === 'uno') ? '🃏' : (($room['game_type'] === 'ular_tangga') ? '🎲' : (($room['game_type'] === 'skenalitik') ? '🎙️' : (($room['game_type'] === 'ludo') ? '🎯' : '🐺')));
             $badge_class = 'badge-' . $room['game_type'];
-            $game_display_title = ($room['game_type'] === 'ular_tangga') ? 'ULAR TANGGA' : (($room['game_type'] === 'skenalitik') ? 'SKENALITIK' : strtoupper($room['game_type']));
+            $game_display_title = ($room['game_type'] === 'ular_tangga') ? 'ULAR TANGGA' : (($room['game_type'] === 'skenalitik') ? 'SKENALITIK' : (($room['game_type'] === 'ludo') ? 'LUDO' : strtoupper($room['game_type'])));
             $status_badge = $room['status'] === 'waiting' ? 'badge-waiting' : 'badge-playing';
             $status_label = $room['status'] === 'waiting' ? '⏳ Menunggu' : '🔥 Bermain';
             $count = (int)$room['player_count'];
@@ -245,8 +248,14 @@
             <div class="form-group">
                 <label class="form-label">Jenis Game</label>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+                    <label class="game-pick" id="pick-ludo">
+                        <input type="radio" name="game_type" value="ludo" checked style="display:none;" onchange="updateGamePick()">
+                        <span style="font-size:1.6rem;">🎯</span>
+                        <span style="font-weight:700;font-size:0.85rem;">Ludo</span>
+                        <span style="font-size:0.65rem;color:var(--text-muted);">Min <?= $ludo_min ?> • 2-4 Pemain</span>
+                    </label>
                     <label class="game-pick" id="pick-sk">
-                        <input type="radio" name="game_type" value="skenalitik" checked style="display:none;" onchange="updateGamePick()">
+                        <input type="radio" name="game_type" value="skenalitik" style="display:none;" onchange="updateGamePick()">
                         <span style="font-size:1.6rem;">🎙️</span>
                         <span style="font-weight:700;font-size:0.85rem;">Skenalitik</span>
                         <span style="font-size:0.65rem;color:var(--text-muted);">Min <?= $sk_min ?> • Papan Skena</span>
@@ -263,7 +272,7 @@
                         <span style="font-weight:700;font-size:0.85rem;">Ular Tangga</span>
                         <span style="font-size:0.65rem;color:var(--text-muted);">Min <?= $ut_min ?></span>
                     </label>
-                    <label class="game-pick" id="pick-ww">
+                    <label class="game-pick" id="pick-ww" style="grid-column: span 2;">
                         <input type="radio" name="game_type" value="werewolf" style="display:none;" onchange="updateGamePick()">
                         <span style="font-size:1.6rem;">🐺</span>
                         <span style="font-weight:700;font-size:0.85rem;">Werewolf</span>
@@ -336,10 +345,11 @@ function closeModal(id) {
 
 function updateGamePick() {
     const selected = document.querySelector('input[name="game_type"]:checked')?.value;
-    document.getElementById('pick-sk').classList.toggle('active', selected === 'skenalitik');
-    document.getElementById('pick-uno').classList.toggle('active', selected === 'uno');
-    document.getElementById('pick-ut').classList.toggle('active', selected === 'ular_tangga');
-    document.getElementById('pick-ww').classList.toggle('active', selected === 'werewolf');
+    document.getElementById('pick-ludo')?.classList.toggle('active', selected === 'ludo');
+    document.getElementById('pick-sk')?.classList.toggle('active', selected === 'skenalitik');
+    document.getElementById('pick-uno')?.classList.toggle('active', selected === 'uno');
+    document.getElementById('pick-ut')?.classList.toggle('active', selected === 'ular_tangga');
+    document.getElementById('pick-ww')?.classList.toggle('active', selected === 'werewolf');
 }
 updateGamePick(); // init
 

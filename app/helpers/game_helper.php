@@ -9,9 +9,19 @@
  */
 if (!function_exists('json_response')) {
     function json_response($data = [], $code = 200) {
+        $captured_err = '';
+        while (ob_get_level() > 0) {
+            $chunk = ob_get_clean();
+            if (!empty($chunk)) {
+                $captured_err .= $chunk;
+            }
+        }
         http_response_code($code);
         header('Content-Type: application/json; charset=utf-8');
         header('Cache-Control: no-store, no-cache, must-revalidate');
+        if (!empty($captured_err) && is_array($data) && !isset($data['php_notice'])) {
+            $data['php_notice'] = strip_tags(trim($captured_err));
+        }
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         exit;
     }

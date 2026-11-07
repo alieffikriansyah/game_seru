@@ -63,6 +63,8 @@ class Room_model extends Model {
             $max = $config['ut_max_players'] ?? 6;
         } elseif ($data['game_type'] === 'skenalitik') {
             $max = $config['sk_max_players'] ?? 6;
+        } elseif ($data['game_type'] === 'ludo') {
+            $max = $config['ludo_max_players'] ?? 4;
         } elseif ($data['game_type'] === 'uno') {
             $max = $config['uno_max_players'] ?? 10;
         } else {

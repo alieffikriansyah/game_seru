@@ -2765,6 +2765,24 @@ function movePawnInDOM(userId, fromTileId, toTileId) {
 }
 
 // ── Game Actions API ──────────────────────────────────────────────
+async function requestJson(url, options = {}) {
+    const defaultHeaders = { 'X-Requested-With': 'XMLHttpRequest' };
+    options.headers = Object.assign({}, defaultHeaders, options.headers || {});
+    try {
+        const res = await fetch(url, options);
+        const text = await res.text();
+        try {
+            return JSON.parse(text);
+        } catch (parseErr) {
+            console.error('Non-JSON server response from ' + url + ':', text);
+            return { ok: false, message: 'Gagal memproses respon dari server: ' + text.replace(/<[^>]+>/g, ' ').trim().substring(0, 100) };
+        }
+    } catch (netErr) {
+        console.error('Network error requesting ' + url + ':', netErr);
+        return { ok: false, message: 'Koneksi ke server terputus.' };
+    }
+}
+
 async function rollDice() {
     playSound('dice');
     const btn = document.getElementById('btn-roll-dice');
@@ -2789,25 +2807,10 @@ async function rollDice() {
         const formData = new FormData();
         formData.append('room_code', ROOM_CODE);
 
-        const res = await fetch(BASE_URL + 'skenalitik/aksi_kocok', {
+        const data = await requestJson(BASE_URL + 'skenalitik/aksi_kocok', {
             method: 'POST',
-            body: formData,
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            body: formData
         });
-        const resText = await res.text();
-        let data;
-        try {
-            data = JSON.parse(resText);
-        } catch (parseErr) {
-            console.error('Non-JSON server response:', resText);
-            clearInterval(rollInterval);
-            d1El.classList.remove('dice-rolling');
-            d2El.classList.remove('dice-rolling');
-            if (cupEl) cupEl.style.transform = 'none';
-            alert('Gagal memproses data kocok dadu dari server.');
-            if (btn) btn.disabled = false;
-            return;
-        }
 
         setTimeout(() => {
             clearInterval(rollInterval);
@@ -2852,12 +2855,10 @@ async function buyProperty() {
     const formData = new FormData();
     formData.append('room_code', ROOM_CODE);
 
-    const res = await fetch(BASE_URL + 'skenalitik/aksi_beli', {
+    const data = await requestJson(BASE_URL + 'skenalitik/aksi_beli', {
         method: 'POST',
-        body: formData,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        body: formData
     });
-    const data = await res.json();
     if (data.ok && data.state) {
         applyState(data.state, false);
     } else {
@@ -2995,12 +2996,10 @@ async function upgradeProperty(tileId, targetLevel = 0) {
         formData.append('target_level', targetLevel);
     }
 
-    const res = await fetch(BASE_URL + 'skenalitik/aksi_upgrade', {
+    const data = await requestJson(BASE_URL + 'skenalitik/aksi_upgrade', {
         method: 'POST',
-        body: formData,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        body: formData
     });
-    const data = await res.json();
     if (data.ok && data.state) {
         applyState(data.state, false);
         closeInspectModal();
@@ -3015,12 +3014,10 @@ async function skipProperty() {
     const formData = new FormData();
     formData.append('room_code', ROOM_CODE);
 
-    const res = await fetch(BASE_URL + 'skenalitik/aksi_lewat', {
+    const data = await requestJson(BASE_URL + 'skenalitik/aksi_lewat', {
         method: 'POST',
-        body: formData,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        body: formData
     });
-    const data = await res.json();
     if (data.ok && data.state) {
         applyState(data.state, false);
     }
@@ -3030,12 +3027,10 @@ async function endTurn() {
     const formData = new FormData();
     formData.append('room_code', ROOM_CODE);
 
-    const res = await fetch(BASE_URL + 'skenalitik/aksi_selesai_giliran', {
+    const data = await requestJson(BASE_URL + 'skenalitik/aksi_selesai_giliran', {
         method: 'POST',
-        body: formData,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        body: formData
     });
-    const data = await res.json();
     if (data.ok && data.state) {
         applyState(data.state, false);
     }
@@ -3046,12 +3041,10 @@ async function payJailFine() {
     formData.append('room_code', ROOM_CODE);
     formData.append('method', 'fine');
 
-    const res = await fetch(BASE_URL + 'skenalitik/aksi_karantina', {
+    const data = await requestJson(BASE_URL + 'skenalitik/aksi_karantina', {
         method: 'POST',
-        body: formData,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        body: formData
     });
-    const data = await res.json();
     if (data.ok && data.state) {
         applyState(data.state, false);
     } else {
@@ -3157,12 +3150,10 @@ async function useJailCard() {
     formData.append('room_code', ROOM_CODE);
     formData.append('method', 'card');
 
-    const res = await fetch(BASE_URL + 'skenalitik/aksi_karantina', {
+    const data = await requestJson(BASE_URL + 'skenalitik/aksi_karantina', {
         method: 'POST',
-        body: formData,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        body: formData
     });
-    const data = await res.json();
     if (data.ok && data.state) {
         applyState(data.state, false);
         closeHandCardsModal();
@@ -3177,12 +3168,10 @@ async function playHandCard(cardId) {
     formData.append('room_code', ROOM_CODE);
     formData.append('card_id', cardId);
 
-    const res = await fetch(BASE_URL + 'skenalitik/aksi_pakai_kartu', {
+    const data = await requestJson(BASE_URL + 'skenalitik/aksi_pakai_kartu', {
         method: 'POST',
-        body: formData,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        body: formData
     });
-    const data = await res.json();
     if (data.ok && data.state) {
         applyState(data.state, false);
         closeHandCardsModal();
@@ -3568,11 +3557,10 @@ async function confirmSurrender() {
     try {
         const formData = new FormData();
         formData.append('room_code', ROOM_CODE);
-        const res = await fetch('<?= site_url('skenalitik/aksi_menyerah') ?>', {
+        const data = await requestJson('<?= site_url('skenalitik/aksi_menyerah') ?>', {
             method: 'POST',
             body: formData
         });
-        const data = await res.json();
         if (data.ok) {
             window.location.href = data.redirect || '<?= site_url('lobby') ?>';
         } else {
